@@ -4,7 +4,7 @@ import pygame
 import sys
 import math
 import random
-from pygame.constants import K_x, WINDOWHITTEST
+from pygame.constants import GL_CONTEXT_DEBUG_FLAG, K_x, WINDOWHITTEST
 
 from pygame.cursors import sizer_y_strings
 from pygame.math import enable_swizzling
@@ -112,8 +112,6 @@ class Board():
             else:
                 x += self.positionwidth
 
-            
-
     
     def checkdestination(self,player,destinationindex):
         if player.name=="top" and destinationindex > 24:
@@ -127,56 +125,19 @@ class Board():
             return 1
         return 0
 
-
-
-    def ismovevalid(self,position,player,value):
-        #print("\n\nposition:                                         ", position)
-        #print("self.positions[position]:                         ", self.positions[position])
-        #print("value:                                            ", value)
-        #print("self.positions[position+value]:                   ", self.positions[position+value])
-        #print("self.positions[position+value][0].player.name:    ", self.positions[position+value][0].player.name)
-        #print("player.name:                                      ", player.name)
-        
-        if not self.positions[position]:  # shouldn't need this -- only allow moves that start on sprites
-            return "position has no pips to move" #position is empty -- nothing to move
-        
-        if not player.name == self.positions[position][0].player.name:
-            return "position has other player's pips" #position has pips from the other player
-
-        # find the destination, return 0 if it's off the board       <---  move this to move(), change this function to accept source, destination
-        if player.name == "top":
-            destination = position + value
-            if destination > 24:
-                return "top tried to move off the board"
-        elif player.name == "bottom":
-            destination = position - value
-            if destination < 1:
-                return "bottom tried to move off the board"
-        else:
-            return "unknown player name"
-
-        if self.positions[destination]:
-            print("test part a - destination position IS NOT empty")
-            if self.positions[destination][0].player.name == player.name:
-                return "OK - destination has my own pips"
-            else:
-                return "destination has other player's pips"
-        else:
-            print("test part a - destination position IS empty")
-            return "OK - destination is empty"
-    
-    def getposition(self):
-        pass #return empty, or count of pips and which player
-
     def move(self,source,destination):
         destination.append(source.pop())
         return 1
 
 
-        
-       
-
     def setup(self):  #deprecated after moving this to the create section.
+        #destroy old pips
+        for player in players:
+            player.jail=[]
+        for position in self.positions:
+            self.positions[position]=[]
+        
+
         # a tuple of tuples with the locations and players of a standard backgammon game
         preset = ((1,2,playerA),(6,5,playerB),(8,3,playerB),(12,5,playerA),
                 (13,5,playerB),(17,3,playerA),(19,5,playerA),(24,2,playerB))
@@ -188,9 +149,8 @@ class Board():
                 self.positions[position[0]].append(Pip(position[2]))
 
 
-# problem:  setup creates new pips each time.  So, we'l have to destroy the board between rounds
-# to avoid using up RAM.  Or, make a new method called reset() that moves pips instead of creating?
-# also: move setup() out of the class.
+# problem:  setup creates new pips each time.  
+# So first .pop() all the pips, then create new pips
 
 
 
@@ -271,17 +231,14 @@ while True:
     clickedsprites = []
     clickedpip = []
     
-        #calc destination
+        #calc destination based activedie
     if activeplayer.name=="top":
         if activeplayer.jail:
             destination = board.positions[activedie]
         else:
             destination = board.positions[5]
     
-
-    
-    
-    
+  
     events = pygame.event.get()   
     for event in events:
         if event.type == pygame.QUIT:
@@ -343,7 +300,8 @@ while True:
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
 
     if moved:
-        activedie=dice.pop()    
+        #activedie=dice.pop()    
+        pass
 
 
 
@@ -380,7 +338,7 @@ while True:
     # the checking "top" player for how to handle direction
     
     # Now:  do dice and turn handling
-    #     
+    # render jail and home
 #######################################################
 
     
@@ -395,21 +353,22 @@ while True:
     #       all the logic and loops again until the motion is complete
 
 
-    # print("ismovevalid checking\n") 
-    # t1 = board.ismovevalid(6,playerA,1)
-    # t2 = board.ismovevalid(6,playerB,2)
-    # t3 = board.ismovevalid(6,playerB,5)
-    # t4 = board.ismovevalid(6,playerB,6)
 
-    
-    # print("recap:")
-    # print("t1:  ", t1)
-    # print("t2:  ", t2)
-    # print("t3:  ", t3)
-    # print("t4:  ", t4)
+    #calc isbearingoff
+    for player in players:
+        player.bearingoff = 1
+    for i in range(1,25):
+        if i < 18 and board.positions[i]:
+            if board.positions[i][0].player==playerA:
+                playerA.bearingoff = 0
+        if i > 6 and board.positions[i]:
+            if board.positions[i][0].player==playerB:
+                playerB.bearingoff = 0
 
-    #print(board.move(playerA,board.positions[6],board.positions[4]))
-    #print(board.move(playerB,6,1))   #wrong way, using indicies instead of lists
+
+
+
+
 
 
     #render stuff
