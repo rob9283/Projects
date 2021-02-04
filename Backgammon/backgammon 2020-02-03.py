@@ -36,44 +36,12 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 #create classes
 #Sprite, Pip, Dice, Doubling Cube, Buttons
 
-class Dice():
-    def __init__(self):
-        self.dicelog=[]
-        self.activedice=[]
-    
-    def whogoesfirst(self,playerA,playerB):
-        adice = []
-        bdice = []
-        while adice == bdice: #roll until it's not a tie
-            adice = self.roll()
-            bdice = self.roll()
-        if adice[0]+adice[1] > bdice[0]+bdice[1]:
-            self.dicelog.append(adice)
-            return playerA
-        else:
-            self.dicelog.append(bdice)
-            return playerB
 
-   
-    def roll(self):
-        dice = [0,0]
-        for i in range(0,2):
-            dice[i]=random.randint(1,6)
-            #print("in dice.roll():  ", dice[0],dice[1])
-        if dice[0]==dice[1]:  #if doubles, make two more 
-            dice.append(dice[0])
-            dice.append(dice[0])
-        dicelog.append(dice)
-        return dice
-    dice = roll()
-    dice.sort()
-
-
-class DisplayDice(pygame.sprite.Sprite):
+class Dice(pygame.sprite.Sprite):
     def __init__(self):
         self.size=50
-        self.rect = pygame.rect.Rect(0,0,self.size,self.size)       
-
+        self.rect = pygame.rect.Rect(0,0,self.size,self.size)
+        
 
 class Pip(pygame.sprite.Sprite):
     def __init__(self, player):
@@ -230,7 +198,17 @@ activeplayer = players[0]
 
 dice=[0,0]
 
-
+def roll():
+    dice = [0,0]
+    for i in range(0,2):
+        dice[i]=random.randint(1,6)
+        #print("inroll dice:  ", dice[0],dice[1])
+    if dice[0]==dice[1]:
+        dice.append(dice[0])
+        dice.append(dice[0])
+    return dice
+dice = roll()
+dice.sort()
 
 print("preloop dice:  ",dice)
 
