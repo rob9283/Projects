@@ -34,7 +34,7 @@ BLUE = (0,0,255)
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 #create fonts
-buttonfont = pygame.font.SysFont("arial", 24)
+buttonfont = pygame.font.SysFont("arial", 30)
 
 #create classes
 #Sprite, Pip, Dice, Doubling Cube, Buttons
@@ -78,16 +78,24 @@ class Dice():
         return tdice
 
 class Button(pygame.sprite.Sprite):
-    def __init__(self,text,font,color,width,height):
-        pygame.sprite.Sprite.__init__(self)
+    def __init__(self,text,pos,font,color):
+        self.text = text
         self.font = font
         self.color = color
-        self.buttonSurf = self.font.render(text,1,color)
-        self.image = pygame.Surface((width,height))
-        self.rect = pygame.rect.Rect(200,200,width,height)
-        W = self.buttonSurf.get_width()
-        H = self.buttonSurf.get_height()
-        self.image.blit(self.buttonSurf, [width/2 - W/2, height/2 - H/2])
+        self.surface = self.font.render(self.text, 1, self.color)
+        self.rect = self.surface.get_rect(topleft=pos)
+        pygame.sprite.Sprite.__init__(self)
+
+    def draw(self):
+        # print("button.draw()")
+        # print("self.image:        ",self.surface)
+        # print("self.rect:         ",self.rect)
+        # print("self.color:         ",self.color)
+        # print("self.font:         ",self.font)
+        # print("self.rect:         ",self.rect)
+        screen.blit(self.surface,self.rect)
+
+
 
 
 class DisplayDice(pygame.sprite.Sprite):
@@ -244,7 +252,7 @@ for position in preset:
     for spot in range(position[1]):
         newpip = Pip(position[2])
         pips.add(newpip)
-        #allsprites.add(newpip)
+        allsprites.add(newpip)
         board.positions[position[0]].append(newpip)
 
 dice=Dice()
@@ -252,11 +260,14 @@ dice=Dice()
 #game loop
 
 #allsprites.add(Button("roll",buttonfont,WHITE,400,400))
-RollButton = Button("roll",buttonfont,WHITE,400,400)
+RollButton = Button("Roll",(400,HEIGHT/2),buttonfont,WHITE)
+# RollButton.draw(screen)
 allsprites.add(RollButton)
-allsprites.draw(screen)
+
+# sys.exit()
 
 while True:
+    
 
     clickedsprites = []
     clickedpip = []
@@ -276,8 +287,13 @@ while True:
     if len(clickedsprites)>1: 
         print("WARNING: clicked on two sprites at the same time")
     elif len(clickedsprites)==1:
-        clickedpip=clickedsprites[0]
-        print("pip player:  ",clickedpip.player.name," position:  ",clickedpip.position)
+        clickedsprite=clickedsprites[0]
+        print("clickedsprite:       ",clickedsprite)
+        if isinstance(clickedsprite,Pip):
+            clickedpip = clickedsprite
+        if isinstance(clickedsprite,Button):
+            clickedbutton = clickedsprite
+    #   print("pip player:  ",clickedpip.player.name," position:  ",clickedpip.position)
 
     #print("activedie:  ",activedie)
 
@@ -432,7 +448,7 @@ while True:
 
     screen.fill(BLACK)
     
-
+    RollButton.draw()
     
     #if anything is in motion update() the motion, else board.assignpipsxy()
     #read the position index of each pip and assign it an x,y 
