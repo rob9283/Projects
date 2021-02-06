@@ -223,7 +223,6 @@ class Player():
         self.home = []
 
     def update(self):
-        self.injail = 0
         self.bearingoff = 0
         self.pipstogo = 0
 
@@ -260,14 +259,14 @@ dice=Dice()
 #game loop
 
 #allsprites.add(Button("roll",buttonfont,WHITE,400,400))
-RollButton = Button("Roll",(400,HEIGHT/2),buttonfont,WHITE)
+RollButton = Button("Roll",(700,HEIGHT/2),buttonfont,WHITE)
 # RollButton.draw(screen)
 allsprites.add(RollButton)
 
 # sys.exit()
 
 while True:
-    
+    print("*****LOOP START*****")
 
     clickedsprites = []
     clickedpip = []
@@ -373,12 +372,14 @@ while True:
                     if board.checkdestination(activeplayer,destination):
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
 
-
-
+    print("moved after move logic:        ",moved)
+    print("dice.inturn after move logic:  ",dice.inturn)
     if moved:
         if dice.activedice:
+            print("do we ever get here?   ttttt")
             dice.activedice.pop()
         else:
+            print("do we ever get here?   ppppp")
             dice.inturn = 0
             dice.turn += 1
             #also change players
@@ -416,13 +417,15 @@ while True:
     #           move(source,destination)
 
     #click simulation
+
+   
     
 
 
 #######################################################
     # keep history by turn, roll, sort, activedie, etc.  
         
-    # Now:  finish turn handling, add roll button**************
+    # Now:  finish roll button, then do turn handling
     # render jail and home
     # handle bumping
 #######################################################
@@ -447,8 +450,9 @@ while True:
     #render stuff
 
     screen.fill(BLACK)
-    
-    RollButton.draw()
+    print("dice.inturn to show roll button:   ",dice.inturn)
+    if not dice.inturn:
+        RollButton.draw()
     
     #if anything is in motion update() the motion, else board.assignpipsxy()
     #read the position index of each pip and assign it an x,y 
@@ -472,8 +476,8 @@ while True:
 
 
 
-    for player in players:
-        player.update
+    for player in players:  #might not need this if it's handled elsewhere
+        player.update()
 
 
 
