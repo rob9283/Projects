@@ -373,17 +373,9 @@ while True:
 
 
 #######################################################
-    # got mouse clicking working
-    # new pseudocode:  assume we know whose turn it is, and they just rolled.  
-    # don't get caught thinking we're going pass an index to move.  Just handle the three cases:
-    # we're in jail, we're normal, or we're bearingoff
-    # might have to build that "are there any valid moves" checking now
-    # also: move dice to a class, to keep data and functions tidy.  
     # keep history by turn, roll, sort, activedie, etc.  
-    # one option:  for player B, activedie*-1 to calc destination.   Then you can remove
-    # the checking "top" player for how to handle direction
-    
-    # Now:  do dice and turn handling
+        
+    # Now:  finish turn handling, add roll button
     # render jail and home
 #######################################################
 

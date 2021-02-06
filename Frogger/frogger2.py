@@ -5,14 +5,17 @@ import turtle
 import math
 import time
 import random
+import os
 
 #setup the window, specifc for Turtle module
 wn = turtle.Screen()
 wn.title("Frogger by Rob")
 wn.setup(600,800)
-wn.bgcolor("black")
+wn.bgpic("background.gif")
 wn.tracer(0)
 wn.cv._rootwindow.resizable(False,False)   #prevent window resizing
+
+print(os.getcwd())
 
 #Register Shape
 shapes = ["frog.gif", "car_left.gif", "car_right.gif", "log_full.gif", "turtle_left.gif",
