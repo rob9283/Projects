@@ -39,34 +39,40 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 class Dice():
     def __init__(self):
         self.dicelog=[]
+        self.turn=0
+        self.inturn=0
         self.activedice=[]
     
+    #note this uses roll() but ignores doubles--good!
     def whogoesfirst(self,playerA,playerB):
         adice = []
         bdice = []
         while adice == bdice: #roll until it's not a tie
             adice = self.roll()
             bdice = self.roll()
+            print("adice:  ",adice)
+            print("bdice:  ",bdice)
         if adice[0]+adice[1] > bdice[0]+bdice[1]:
+            self.dicelog=[]  #because roll() also appends to dicelog
             self.dicelog.append(adice)
             return playerA
         else:
+            self.dicelog=[] #because roll() also appends to dicelog
             self.dicelog.append(bdice)
             return playerB
 
    
     def roll(self):
-        dice = [0,0]
+        tdice = [0,0]
         for i in range(0,2):
-            dice[i]=random.randint(1,6)
+            tdice[i]=random.randint(1,6)
             #print("in dice.roll():  ", dice[0],dice[1])
-        if dice[0]==dice[1]:  #if doubles, make two more 
-            dice.append(dice[0])
-            dice.append(dice[0])
-        dicelog.append(dice)
-        return dice
-    dice = roll()
-    dice.sort()
+        if tdice[0]==tdice[1]:  #if doubles, make two more 
+            tdice.append(tdice[0])
+            tdice.append(tdice[0])
+        self.dicelog.append(tdice)
+        return tdice
+
 
 
 class DisplayDice(pygame.sprite.Sprite):
@@ -216,41 +222,22 @@ preset = ((1,2,playerA),(6,5,playerB),(8,3,playerB),(12,5,playerA),
 
 # create each pip and place it where it belongs in board.positions
 for position in preset:
-    print("preset position:  ",position[0])
+    #print("preset position:  ",position[0])
     for spot in range(position[1]):
         newpip = Pip(position[2])
         pips.add(newpip)
         allsprites.add(newpip)
         board.positions[position[0]].append(newpip)
-        
-activeplayer = players[0]
-#need to start implementing turns.  Whose turn is it?
 
-
-
-dice=[0,0]
-
-
-
-print("preloop dice:  ",dice)
-
-activedie=dice.pop()
-clickedsprites=[]
+dice=Dice()
 
 #game loop
 
 while True:
+
     clickedsprites = []
     clickedpip = []
-    
-        #calc destination based activedie
-    if activeplayer.name=="top":
-        if activeplayer.jail:
-            destination = board.positions[activedie]
-        else:
-            destination = board.positions[5]
-    
-  
+
     events = pygame.event.get()   
     for event in events:
         if event.type == pygame.QUIT:
@@ -264,16 +251,44 @@ while True:
     #print("clickedsprites:  ", clickedsprites)
     #mouse bindings
     if len(clickedsprites)>1: 
-        print("clicked on two sprites at the same time")
+        print("WARNING: clicked on two sprites at the same time")
     elif len(clickedsprites)==1:
         clickedpip=clickedsprites[0]
         print("pip player:  ",clickedpip.player.name," position:  ",clickedpip.position)
 
-    print("activedie:  ",activedie)
+    #print("activedie:  ",activedie)
+
+
+    if dice.turn==0:
+        activeplayer = dice.whogoesfirst(playerA,playerB)
+        dice.turn=1
+        dice.inturn=1
+        dice.activedice=dice.dicelog[0]
+    print("***Loop Start")
+    print("In Turn:        ",dice.inturn)
+    print("Turn:           ",dice.turn)
+    print("dicelog:        ",dice.dicelog)
+
+    print("activeplayer:   ",activeplayer.name)
+    print("dicelog0:       ",dice.dicelog[0])
+    print("activedice[-1]: ",dice.activedice[-1])
+
+    print("activedice:     ",dice.activedice)
+    
+
+
+
+
+
+
+
+
+
 
 
     moved = 0
-    if clickedpip:  #has a pip been clicked
+    if dice.inturn and clickedpip:  #has a pip been clicked
+        activedie=dice.activedice[-1]
         if clickedpip.player == activeplayer:  #if the clicked pip belongs to activeplayer
             if activeplayer.name=="top":  #top player
                 if activeplayer.jail:  #player is in jail, can only move jailed pips
@@ -311,12 +326,31 @@ while True:
                     if board.checkdestination(activeplayer,destination):
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
 
+
+
     if moved:
-        #activedie=dice.pop()    
-        pass
+        if dice.activedice:
+            dice.activedice.pop()
+        else:
+            dice.inturn = 0
+            dice.turn += 1
+            #also change players
+
+        moved=0
 
 
+    # print("***afterclick, after if moved")
+    # print("In Turn:        ",dice.inturn)
+    # print("Turn:           ",dice.turn)
+    # print("moved:         ",moved)
+    # print("dicelog:        ",dice.dicelog)
+    # print("activeplayer:   ",activeplayer.name)
+    # print("dicelog0:       ",dice.dicelog[0])
+    # print("activedice[-1]: ",dice.activedice[-1])
 
+    # print("activedice:     ",dice.activedice)
+    # print("len(dice.activedice):  ",len(dice.activedice))
+    
 
     
 
