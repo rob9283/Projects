@@ -33,8 +33,12 @@ BLUE = (0,0,255)
 #create screen
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
+#create fonts
+buttonfont = pygame.font.SysFont("arial", 24)
+
 #create classes
 #Sprite, Pip, Dice, Doubling Cube, Buttons
+
 
 class Dice():
     def __init__(self):
@@ -73,6 +77,17 @@ class Dice():
         self.dicelog.append(tdice)
         return tdice
 
+class Button(pygame.sprite.Sprite):
+    def __init__(self,text,font,color,width,height):
+        pygame.sprite.Sprite.__init__(self)
+        self.font = font
+        self.color = color
+        self.buttonSurf = self.font.render(text,1,color)
+        self.image = pygame.Surface((width,height))
+        self.rect = pygame.rect.Rect(200,200,width,height)
+        W = self.buttonSurf.get_width()
+        H = self.buttonSurf.get_height()
+        self.image.blit(self.buttonSurf, [width/2 - W/2, height/2 - H/2])
 
 
 class DisplayDice(pygame.sprite.Sprite):
@@ -150,12 +165,16 @@ class Board():
             return 0
         if player.name=="bottom" and destinationindex < 1:
             return 0
-
         if not self.positions[destinationindex]:
             return 1
         if self.positions[destinationindex][0].player.name == player.name:
             return 1
-        return 0
+        else:
+            if self.positions[destinationindex][1]:
+                return 0
+            else:
+                return 2    #bump!
+        
 
     def move(self,source,destination):
         destination.append(source.pop())
@@ -201,8 +220,7 @@ class Player():
         self.pipstogo = 0
 
 
-#create fonts
-font = pygame.font.SysFont("arial", 24)
+
 
 
 #create objects
@@ -226,12 +244,17 @@ for position in preset:
     for spot in range(position[1]):
         newpip = Pip(position[2])
         pips.add(newpip)
-        allsprites.add(newpip)
+        #allsprites.add(newpip)
         board.positions[position[0]].append(newpip)
 
 dice=Dice()
 
 #game loop
+
+#allsprites.add(Button("roll",buttonfont,WHITE,400,400))
+RollButton = Button("roll",buttonfont,WHITE,400,400)
+allsprites.add(RollButton)
+allsprites.draw(screen)
 
 while True:
 
@@ -264,17 +287,25 @@ while True:
         dice.turn=1
         dice.inturn=1
         dice.activedice=dice.dicelog[0]
-    print("***Loop Start")
+    # print("***Loop Start")
     print("In Turn:        ",dice.inturn)
     print("Turn:           ",dice.turn)
     print("dicelog:        ",dice.dicelog)
 
     print("activeplayer:   ",activeplayer.name)
     print("dicelog0:       ",dice.dicelog[0])
-    print("activedice[-1]: ",dice.activedice[-1])
+    # print("activedice[-1]: ",dice.activedice[-1])
 
     print("activedice:     ",dice.activedice)
     
+    #UI Render:
+    #display menu
+    if dice.inturn:
+        #display activedice
+        pass
+    else:
+        #display roll button
+        pass
 
 
 
@@ -375,12 +406,13 @@ while True:
 #######################################################
     # keep history by turn, roll, sort, activedie, etc.  
         
-    # Now:  finish turn handling, add roll button
+    # Now:  finish turn handling, add roll button**************
     # render jail and home
+    # handle bumping
 #######################################################
 
 
-    #calc isbearingoff
+    #calc isbearingoff (could move this to inside "if moved:" to save some CPU
     for player in players:
         player.bearingoff = 1
     for i in range(1,25):
@@ -418,8 +450,8 @@ while True:
 #    for brick in bricks:   #if the pips know their location, maybe just render them?
 #        brick.render()     #that's dumb, right?  collision checking everywhere
 
-    score_surface = font.render(f"Score: {playerA.score}", True, WHITE)
-    screen.blit(score_surface, (WIDTH/2.0, 25))
+    # score_surface = font.render(f"Score: {playerA.score}", True, WHITE)
+    # screen.blit(score_surface, (WIDTH/2.0, 25))
 
 
 
