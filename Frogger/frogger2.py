@@ -6,6 +6,8 @@ import math
 import time
 import random
 import os
+import winsound
+
 
 #setup the window, specifc for Turtle module
 wn = turtle.Screen()
@@ -15,7 +17,17 @@ wn.bgpic("background.gif")
 wn.tracer(0)
 wn.cv._rootwindow.resizable(False,False)   #prevent window resizing
 
-print(os.getcwd())
+#setup sound
+movesound="sounds/146726__leszek-szary__jumping.wav"
+splashsound="sounds/9508__petenice__splash.wav"
+splatsound="sounds/445117__breviceps__cartoon-splat.wav"
+successsound="sounds/171670__leszek-szary__success-2.wav"
+gameoversound="sounds/150879__nenadsimic__jazzy-chords.wav"
+
+
+
+
+print("OS CWD:  ",os.getcwd())
 
 #Register Shape
 shapes = ["frog.gif", "car_left.gif", "car_right.gif", "log_full.gif", "turtle_left.gif",
@@ -31,7 +43,6 @@ pen.penup()
 
 
 # Create Classes
-
 class Sprite():
     def __init__(self, x, y, width, height, image):
         self.x = x
@@ -67,15 +78,19 @@ class Player(Sprite):
 
     def up(self):
         self.y += 50
+        winsound.PlaySound(movesound, winsound.SND_FILENAME|winsound.SND_ASYNC)
 
     def down(self):
         self.y -= 50
+        winsound.PlaySound(movesound, winsound.SND_FILENAME|winsound.SND_ASYNC)
 
     def left(self):
         self.x -= 50
+        winsound.PlaySound(movesound, winsound.SND_FILENAME|winsound.SND_ASYNC)
 
     def right(self):
         self.x += 50
+        winsound.PlaySound(movesound, winsound.SND_FILENAME|winsound.SND_ASYNC)
     
     def go_home(self):
         self.dx = 0
@@ -87,12 +102,14 @@ class Player(Sprite):
         self.time_remaining = 60
         self.start_time = time.time()
         self.lives -= 1
+        if self.lives==0:
+            winsound.PlaySound(gameoversound, winsound.SND_FILENAME|winsound.SND_PURGE)
     
     def update(self):
         self.x += player.dx
-
         #border checking
         if self.x < -320 or self.x > 320:
+            winsound.PlaySound(splatsound, winsound.SND_FILENAME|winsound.SND_ASYNC)
             self.dies()
         if self.y < -325:
             self.go_home()
@@ -102,6 +119,7 @@ class Player(Sprite):
         #print(self.y)
 
         if self.time_remaining <= 0:
+            winsound.PlaySound(splatsound, winsound.SND_FILENAME|winsound.SND_ASYNC)
             self.dies()
 
     
@@ -217,7 +235,7 @@ class Timer():
 #Create Objects
 
 # programatically create list of cars.  create a blank list, then loop by appending car objects.  This
-# creates 5 cars.  'x' loop index determines the y height on screen.  
+# creates 5 rows of two cars each.  'x' loop index determines the y height on screen.  
 cars = []
 for x in range (0,5):
     rowspeed = random.randint(15,30)/100       # each row has its own random speed
@@ -273,6 +291,8 @@ while player.lives>0:
         sprite.render(pen)
         sprite.update()
 
+    
+
     #render countdown timer
     timer.render(player.time_remaining, pen)
     
@@ -289,6 +309,7 @@ while player.lives>0:
     for sprite in sprites:
         if player.is_collision(sprite):
             if isinstance(sprite, Car):
+                winsound.PlaySound(splatsound, winsound.SND_FILENAME|winsound.SND_ASYNC)
                 player.dies()
                 break
             elif isinstance(sprite,Log):
@@ -300,10 +321,12 @@ while player.lives>0:
             elif isinstance(sprite, Home):
                 player.go_home()
                 sprite.image = "frog_home.gif"
+                winsound.PlaySound(successsound, winsound.SND_FILENAME|winsound.SND_ASYNC)
                 player.frogsathome += 1
                 break
     
             elif player.y > 0:
+                winsound.PlaySound(splashsound, winsound.SND_FILENAME|winsound.SND_ASYNC)
                 player.dies()
 
     if player.frogsathome == 5:   #if we won
@@ -312,6 +335,8 @@ while player.lives>0:
         for goal in goals:   #reset goal objects to empty house gifs
             goal.image="goal.gif"
 
+    if player.lives==0:
+        winsound.PlaySound(movesound, winsound.SND_FILENAME)
 
     #update screen
     wn.update()
