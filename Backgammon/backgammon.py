@@ -28,6 +28,7 @@ BLUE = (0,0,255)
 # todo
 # handle render when there are more than 6 pips in a position
 # do I even need the board object if I only ever have one instance?  Could move all those functions out to root?
+# if we're forcing players to move largest die first, need to check if there even are any valid moves after each roll
 
 
 #create screen
@@ -42,13 +43,15 @@ buttonfont = pygame.font.SysFont("arial", 30)
 
 class Dice():
     def __init__(self):
+        print("initing dice")
         self.dicelog=[]
         self.turn=0
         self.inturn=0
-        self.activedice=[]
+        #self.activedice=[]
     
     #note this uses roll() but ignores doubles--good!
     def whogoesfirst(self,playerA,playerB):
+        print("starting dice.whogoesfirst()")
         adice = []
         bdice = []
         while adice == bdice: #roll until it's not a tie
@@ -74,8 +77,13 @@ class Dice():
         if tdice[0]==tdice[1]:  #if doubles, make two more 
             tdice.append(tdice[0])
             tdice.append(tdice[0])
-        self.dicelog.append(tdice)
         return tdice
+    
+    # def getactivedice(self):
+    #     tdice=[]
+    #     for i in range(0,len(self.dicelog[self.turn])):
+    #         tdice[i]=int(self.dicelog[self.turn][i])
+    #     return tdice
 
 class Button(pygame.sprite.Sprite):
     def __init__(self,text,pos,font,color):
@@ -178,7 +186,7 @@ class Board():
         if self.positions[destinationindex][0].player.name == player.name:
             return 1
         else:
-            if self.positions[destinationindex][1]:
+            if self.positions[destinationindex][1]:   #not right
                 return 0
             else:
                 return 2    #bump!
@@ -255,6 +263,8 @@ for position in preset:
         board.positions[position[0]].append(newpip)
 
 dice=Dice()
+activedice=[]
+activeplayer=playerA
 
 #game loop
 
@@ -265,11 +275,16 @@ allsprites.add(RollButton)
 
 # sys.exit()
 
+def printdebug():
+        print("activeplayer:   ",activeplayer.name,"  inTurn:   ",dice.inturn,"   Turn:   ",dice.turn,"    activedice:   ",activedice)
+        print("dicelog:   ",dice.dicelog)
+
 while True:
-    print("*****LOOP START*****")
+    # print("*****LOOP START*****")
 
     clickedsprites = []
     clickedpip = []
+    clickedbutton = []
 
     events = pygame.event.get()   
     for event in events:
@@ -278,10 +293,8 @@ while True:
         if event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
             clickedsprites = [s for s in allsprites if s.rect.collidepoint(pos)]
-    #print("events:  ",events)
-    #print("allsprites:  ", allsprites)
-    #print("pips:  ",pips)
-    #print("clickedsprites:  ", clickedsprites)
+
+
     #mouse bindings
     if len(clickedsprites)>1: 
         print("WARNING: clicked on two sprites at the same time")
@@ -292,27 +305,21 @@ while True:
             clickedpip = clickedsprite
         if isinstance(clickedsprite,Button):
             clickedbutton = clickedsprite
-    #   print("pip player:  ",clickedpip.player.name," position:  ",clickedpip.position)
 
-    #print("activedie:  ",activedie)
+
 
 
     if dice.turn==0:
+        print("\n***if dice.turn==0")
+        printdebug()
         activeplayer = dice.whogoesfirst(playerA,playerB)
         dice.turn=1
         dice.inturn=1
-        dice.activedice=dice.dicelog[0]
-    # print("***Loop Start")
-    print("In Turn:        ",dice.inturn)
-    print("Turn:           ",dice.turn)
-    print("dicelog:        ",dice.dicelog)
+        activedice=dice.dicelog[0][:]
+        print("***if dice.turn==0 completed")
+        printdebug()
 
-    print("activeplayer:   ",activeplayer.name)
-    print("dicelog0:       ",dice.dicelog[0])
-    # print("activedice[-1]: ",dice.activedice[-1])
 
-    print("activedice:     ",dice.activedice)
-    
     #UI Render:
     #display menu
     if dice.inturn:
@@ -323,7 +330,18 @@ while True:
         pass
 
 
-
+    if not dice.inturn and clickedbutton == RollButton:
+        print("\n***dice.inturn:  0   and clickedbutton == RollButton")
+        printdebug()
+        dice.dicelog.append(dice.roll())
+        dice.turn += 1
+        print("extra dicelog:   ",dice.dicelog)
+        activedice=dice.dicelog[dice.turn][:]   #this funky syntax makes a copy, instead of a reference
+        dice.inturn=1
+        if activeplayer == players[0]:
+            activeplayer = players[1]
+        else:
+            activeplayer = players[0]
 
 
 
@@ -334,7 +352,10 @@ while True:
 
     moved = 0
     if dice.inturn and clickedpip:  #has a pip been clicked
-        activedie=dice.activedice[-1]
+        print("\n***if dice.inturn and clickedpip:    -- main move logic")
+        printdebug()
+
+        activedie=activedice[-1]
         if clickedpip.player == activeplayer:  #if the clicked pip belongs to activeplayer
             if activeplayer.name=="top":  #top player
                 if activeplayer.jail:  #player is in jail, can only move jailed pips
@@ -372,54 +393,26 @@ while True:
                     if board.checkdestination(activeplayer,destination):
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
 
-    print("moved after move logic:        ",moved)
-    print("dice.inturn after move logic:  ",dice.inturn)
+    # print("moved after move logic:        ",moved)
+    # print("inTurn:   ",dice.inturn,"   Turn:   ",dice.turn,"    activedice:   ",activedice)
+    # print("dicelog:   ",dice.dicelog)
+
+    # if activedice:
+    #     print("checked activedice with if activedice, and it's TRUE")
+    # else:
+    #     print("checked activedice with if activedice, and it's FALSE")
     if moved:
-        if dice.activedice:
+        print("\n***if moved")
+        printdebug()
+        if activedice:
             print("do we ever get here?   ttttt")
-            dice.activedice.pop()
-        else:
+            activedice.pop()
+        if not activedice:
             print("do we ever get here?   ppppp")
             dice.inturn = 0
-            dice.turn += 1
             #also change players
-
-        moved=0
-
-
-    # print("***afterclick, after if moved")
-    # print("In Turn:        ",dice.inturn)
-    # print("Turn:           ",dice.turn)
-    # print("moved:         ",moved)
-    # print("dicelog:        ",dice.dicelog)
-    # print("activeplayer:   ",activeplayer.name)
-    # print("dicelog0:       ",dice.dicelog[0])
-    # print("activedice[-1]: ",dice.activedice[-1])
-
-    # print("activedice:     ",dice.activedice)
-    # print("len(dice.activedice):  ",len(dice.activedice))
-    
-
-    
-
-    # roll
-    # are there any valid moves?  if not end the turn
-    # get click 
-    # if clicked button, do a button
-    # elif clicked pip matches activeplayer:
-    #        if player in jail AND clickedpip = jail
-    #             if destination valid 
-    #               move(jail,destination)
-    #        if player bearingoff 
-    #             if destination valid 
-    #               bear off(source)
-    #        if destination valid
-    #           move(source,destination)
-
-    #click simulation
-
-   
-    
+        print("***if moved completed")
+        printdebug()
 
 
 #######################################################
@@ -428,6 +421,8 @@ while True:
     # Now:  finish roll button, then do turn handling
     # render jail and home
     # handle bumping
+    # dice.turn isn't right, becasue the first turn is 0, second turn is 1, etc. 
+
 #######################################################
 
 
@@ -450,7 +445,7 @@ while True:
     #render stuff
 
     screen.fill(BLACK)
-    print("dice.inturn to show roll button:   ",dice.inturn)
+    
     if not dice.inturn:
         RollButton.draw()
     
