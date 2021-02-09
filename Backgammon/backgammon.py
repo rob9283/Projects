@@ -61,10 +61,12 @@ class Dice():
             print("bdice:  ",bdice)
         if adice[0]+adice[1] > bdice[0]+bdice[1]:
             self.dicelog=[]  #because roll() also appends to dicelog
+            self.dicelog.append(bdice)
             self.dicelog.append(adice)
             return playerA
         else:
             self.dicelog=[] #because roll() also appends to dicelog
+            self.dicelog.append(adice)
             self.dicelog.append(bdice)
             return playerB
 
@@ -177,6 +179,7 @@ class Board():
 
     
     def checkdestination(self,player,destinationindex):
+        #return 0 for no good, 1 for ok, and 2 for bump
         if player.name=="top" and destinationindex > 24:
             return 0
         if player.name=="bottom" and destinationindex < 1:
@@ -186,13 +189,18 @@ class Board():
         if self.positions[destinationindex][0].player.name == player.name:
             return 1
         else:
-            if self.positions[destinationindex][1]:   #not right
-                return 0
+            if len(self.positions[destinationindex])==1:
+                return 2
             else:
-                return 2    #bump!
+                return "error--shouldn't get here"
         
 
     def move(self,source,destination):
+        destination.append(source.pop())
+        return 1
+
+    def movebump(self,source,destination,jail):
+        jail.append(destination.pop())
         destination.append(source.pop())
         return 1
 
@@ -276,8 +284,11 @@ allsprites.add(RollButton)
 # sys.exit()
 
 def printdebug():
-        print("activeplayer:   ",activeplayer.name,"  inTurn:   ",dice.inturn,"   Turn:   ",dice.turn,"    activedice:   ",activedice)
-        print("dicelog:   ",dice.dicelog)
+        try:
+            print("activeplayer:   ",activeplayer.name,"  inTurn:   ",dice.inturn,"   Turn:   ",dice.turn,"    activedice:   ",activedice)
+            print("checkdestination:  ", board.checkdestination(activeplayer,destination))
+        except Exception:
+            print("some bullshit exception from printdebug()")
 
 while True:
     # print("*****LOOP START*****")
@@ -313,9 +324,10 @@ while True:
         print("\n***if dice.turn==0")
         printdebug()
         activeplayer = dice.whogoesfirst(playerA,playerB)
-        dice.turn=1
+        dice.turn+=1
+        print("^^^incrementing dice.turn from the rolloff")
         dice.inturn=1
-        activedice=dice.dicelog[0][:]
+        activedice=dice.dicelog[dice.turn][:]
         print("***if dice.turn==0 completed")
         printdebug()
 
@@ -334,15 +346,17 @@ while True:
         print("\n***dice.inturn:  0   and clickedbutton == RollButton")
         printdebug()
         dice.dicelog.append(dice.roll())
-        dice.turn += 1
-        print("extra dicelog:   ",dice.dicelog)
+        dice.turn += 1  
+        print("^^^incrementing dice.turn from the RollButton")
         activedice=dice.dicelog[dice.turn][:]   #this funky syntax makes a copy, instead of a reference
         dice.inturn=1
         if activeplayer == players[0]:
             activeplayer = players[1]
         else:
             activeplayer = players[0]
-
+        print("***ending dice.inturn:  0   and clickedbutton == RollButton")
+        printdebug()
+        
 
 
 
@@ -372,8 +386,11 @@ while True:
                 else:   #regular move
                     destination = clickedpip.position+activedie
                     print(destination)
-                    if board.checkdestination(activeplayer,destination):
+                    if board.checkdestination(activeplayer,destination)==1:
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])
+                    if board.checkdestination(activeplayer,destination)==2:
+                        moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
+
 
             if activeplayer.name=="bottom":
                 if activeplayer.jail:
@@ -390,17 +407,13 @@ while True:
                 else:
                     destination = clickedpip.position-activedie
                     print(destination)
-                    if board.checkdestination(activeplayer,destination):
+                    if board.checkdestination(activeplayer,destination)==1:
                         moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
+                    if board.checkdestination(activeplayer,destination)==2:
+                        moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
 
-    # print("moved after move logic:        ",moved)
-    # print("inTurn:   ",dice.inturn,"   Turn:   ",dice.turn,"    activedice:   ",activedice)
-    # print("dicelog:   ",dice.dicelog)
 
-    # if activedice:
-    #     print("checked activedice with if activedice, and it's TRUE")
-    # else:
-    #     print("checked activedice with if activedice, and it's FALSE")
+
     if moved:
         print("\n***if moved")
         printdebug()
@@ -417,11 +430,14 @@ while True:
 
 #######################################################
     # keep history by turn, roll, sort, activedie, etc.  
-        
-    # Now:  finish roll button, then do turn handling
+
+    # handle bumping        
     # render jail and home
-    # handle bumping
-    # dice.turn isn't right, becasue the first turn is 0, second turn is 1, etc. 
+    #****** handle bumping -- checkdestination got a "should never get here" -- but maybe outside of a regular check?  like, when it shouldn't have been checking anyway?
+    # important:  figure out highest die first even works.  If it's blocked, do lower die?
+    #             how did that weird old Palm game work?
+
+ 
 
 #######################################################
 
