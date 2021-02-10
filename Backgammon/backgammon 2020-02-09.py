@@ -1,4 +1,4 @@
-#backgammon
+#backgammon version before rewriting move logic to handle out-of-order dice
 
 import pygame
 import sys
@@ -268,7 +268,6 @@ for position in preset:
 
 dice=Dice()
 activedice=[]
-availabledice=[]
 activeplayer=playerA
 
 #game loop
@@ -325,9 +324,6 @@ while True:
         print("^^^incrementing dice.turn from the rolloff")
         dice.inturn=1
         activedice=dice.dicelog[dice.turn][:]
-        for i in range(len(activedice)):
-            activedice[i]=[activedice[i],0]
-            #now add usedflags to activedice, so we know if a die has been played
 
 
 
@@ -346,16 +342,11 @@ while True:
         dice.dicelog.append(dice.roll())
         dice.turn += 1  
         activedice=dice.dicelog[dice.turn][:]   #this funky syntax makes a copy, instead of a reference
-        for dice in activedice:
-            dice=[dice,0]
-            #now add usedflags to activedice, so we know if a die has been played
         dice.inturn=1
         if activeplayer == players[0]:
             activeplayer = players[1]
-            otherplayer = players[0]
         else:
             activeplayer = players[0]
-            otherplayer = players[1]
 
         
 #if activeplayer=bottom: effective dice = -activedice
@@ -368,52 +359,55 @@ while True:
     moved = 0
     if dice.inturn and clickedpip:  #has a pip been clicked
         print("\n*****MAIN MOVE LOGIC*****")
-        if activeplayer.name=="bottom":  #change dice values negative for the bottom player
-            for i in range(len(activedice)):
-                activedice[i][0]=-activedice[i][0]
-        
-        if activeplayer.jail:
-            pass
-        if activeplayer.bearingoff:
-            pass
-        
-        # maybe skip list comprehension for now, eh?
-        # availabledice = [board.checkdestination(activeplayer,clickedpip.position+tdice[0]) for tdice in activedice]
+        activedie=activedice[-1]
+        if clickedpip.player == activeplayer:  #if the clicked pip belongs to activeplayer
+            if activeplayer.name=="top":  #top player
+                if activeplayer.jail:  #player is in jail, can only move jailed pips
+                    destination = activedie  
+                    if board.checkdestination(activeplayer,destination):
+                        moved = board.move(activeplayer.jail,board.positions[destination])
+                elif activeplayer.bearingoff:  #player is bearing off, special rules
+                    destination = activedie
+                    if destination > 24:
+                        moved = board.move(board.positions[clickedpip.position],player.home)
+                    else:
+                        if board.checkdestination(activeplayer,destination):
+                            board.move(board.positions[clickedpip.position],board.positions[destination])
+                else:   #regular move
+                    destination = clickedpip.position+activedie
+                    # print(destination)
+                    if board.checkdestination(activeplayer,destination)==1:
+                        moved = board.move(board.positions[clickedpip.position],board.positions[destination])
+                    if board.checkdestination(activeplayer,destination)==2:
+                        moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
 
 
-
-
-
-
-
-
-        # if clickedpip.player == activeplayer:  #if the clicked pip belongs to activeplayer
-        #     if activeplayer.name=="top":  #top player
-        #         if activeplayer.jail:  #player is in jail, can only move jailed pips
-        #             destination = activedie  
-        #             if board.checkdestination(activeplayer,destination):
-        #                 moved = board.move(activeplayer.jail,board.positions[destination])
-        #         elif activeplayer.bearingoff:  #player is bearing off, special rules
-        #             destination = activedie
-        #             if destination > 24:
-        #                 moved = board.move(board.positions[clickedpip.position],player.home)
-        #             else:
-        #                 if board.checkdestination(activeplayer,destination):
-        #                     board.move(board.positions[clickedpip.position],board.positions[destination])
-        #         else:   #regular move
-        #             destination = clickedpip.position+activedie
-        #             # print(destination)
-        #             if board.checkdestination(activeplayer,destination)==1:
-        #                 moved = board.move(board.positions[clickedpip.position],board.positions[destination])
-        #             if board.checkdestination(activeplayer,destination)==2:
-        #                 moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
+            if activeplayer.name=="bottom":
+                if activeplayer.jail:
+                    destination = 24-activedie
+                    if board.checkdestination(activeplayer,destination):
+                        moved = board.move(activeplayer.jail,board.positions[destination])
+                elif activeplayer.bearingoff:
+                    destination = activedie
+                    if destination < 1:
+                        moved = board.move(board.positions[clickedpip.position],player.home)
+                    else:
+                        if board.checkdestination(activeplayer,destination):
+                            board.move(board.positions[clickedpip.position],board.positions[destination])
+                else:
+                    destination = clickedpip.position-activedie
+                    # print(destination)
+                    if board.checkdestination(activeplayer,destination)==1:
+                        moved = board.move(board.positions[clickedpip.position],board.positions[destination])    
+                    if board.checkdestination(activeplayer,destination)==2:
+                        moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
 
 
 
     if moved:
         # print("\n***if moved")
         if activedice:
-            activedice.pop()  #don't need to pop this because we'll mark inactive in the move logic
+            activedice.pop()
         if not activedice:
             dice.inturn = 0
             #also change players
@@ -465,7 +459,6 @@ while True:
     dtext.append("activeplayer:   "+str(activeplayer.name))
     dtext.append("activedice:     "+str(activedice))
     dtext.append("dicelog:        "+str(dice.dicelog))
-    dtext.append("availabledice:  "+str(availabledice))
     dxpos=1000
     dypos=400
     for line in range(len(dtext)):
@@ -537,14 +530,11 @@ Roll Dice
                 valid move with dice, highest to lowest, do the move
         No valid moves, pass the turn
     Player moving normally
-        Are there any valid moves at all?
-            Player clicks
-                valid move with dice, highest to lowest, do the move
+        Player clicks
+            valid move with dice, highest to lowest, do the move
 
 
-********TODO:  jump to line 382, figure out how to handle 
-are there any moves at all?  (pass turn if not)
-is the clicked move valid on the highest die?  next highest?  do the move
+
 
 
 
