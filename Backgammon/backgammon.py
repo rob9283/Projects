@@ -43,7 +43,7 @@ class Dice():
         self.dicelog=[]
         self.turn=0
         self.inturn=0
-        #self.activedice=[]
+        
     
     #note this uses roll() but ignores doubles--good!
     def whogoesfirst(self,playerA,playerB):
@@ -77,12 +77,6 @@ class Dice():
             tdice.append(tdice[0])
         return tdice
     
-    # def getactivedice(self):
-    #     tdice=[]
-    #     for i in range(0,len(self.dicelog[self.turn])):
-    #         tdice[i]=int(self.dicelog[self.turn][i])
-    #     return tdice
-
 class Button(pygame.sprite.Sprite):
     def __init__(self,text,pos,font,color):
         self.text = text
@@ -139,6 +133,11 @@ class Board():
         #    self.positions.append([])
 
     def assignpipsxy(self):
+        for pip in pips:  #Todo: remove this; moves all pips to 50,50 so we don't have duplicate sprite clicking while we figure out bumps and rending home and jail
+            pip.x=50
+            pip.y=50
+        
+        
         #for each position, assign the pips the proper xy to be rendered.
         
         for position in range(1,25):
@@ -268,7 +267,7 @@ for position in preset:
 
 dice=Dice()
 activedice=[]
-availabledice=[]
+effectivedice=[]
 activeplayer=playerA
 
 #game loop
@@ -315,19 +314,46 @@ while True:
         if isinstance(clickedsprite,Button):
             clickedbutton = clickedsprite
 
-
-
-
+    
     if dice.turn==0:
+        effectivedice=[[],[],[],[]]
         print("\n***if dice.turn==0")
         activeplayer = dice.whogoesfirst(playerA,playerB)
         dice.turn+=1
         print("^^^incrementing dice.turn from the rolloff")
+        
         dice.inturn=1
         activedice=dice.dicelog[dice.turn][:]
+        #add used flags to activedice
         for i in range(len(activedice)):
             activedice[i]=[activedice[i],0]
-            #now add usedflags to activedice, so we know if a die has been played
+        
+        #now add usedflags to activedice, so we know if a die has been played
+        for i in range(len(activedice)):
+            effectivedice[i]=[activedice[i][0],i] #come back here to add flags to effective dice if we need it, but try hard not to need it
+        
+        #sort the effective dice so it's high to low
+        effectivedice.sort(reverse=True)
+        
+    
+        if not effectivedice[3]:   #if dice 3 is empty, it's not doubles, pop last two empty dice
+            effectivedice.pop()
+            effectivedice.pop()
+        #if activeplayer is bottom, neg the dice values
+        if activeplayer==playerB:
+            for i in range(len(effectivedice)):
+                effectivedice[i][0] *= -1
+                
+#len(effectivedice)>1 and 
+        #for i in range(len(effectivedice)):
+
+
+#for each roll, including the first one:
+#roll the dice, put in dicelog[turn]
+#set activedice to be dicelog, and add used flags
+#set effective dice to be sorted, with used flags, with index in activedice, and negatived for bottom
+#do displaydice based on activedice 
+#do moves based on effectivedice, write the usedflag in both effective and active
 
 
 
@@ -348,14 +374,20 @@ while True:
         activedice=dice.dicelog[dice.turn][:]   #this funky syntax makes a copy, instead of a reference
         for dice in activedice:
             dice=[dice,0]
-            #now add usedflags to activedice, so we know if a die has been played
+            #now add usedflags to activedice, so we can tell if a die has been played
         dice.inturn=1
+        
+        #make the correct player active
         if activeplayer == players[0]:
             activeplayer = players[1]
             otherplayer = players[0]
         else:
             activeplayer = players[0]
             otherplayer = players[1]
+
+        if activeplayer.name=="bottom":  #change dice values negative for the bottom player
+            for i in range(len(activedice)):
+                activedice[i][0]=-activedice[i][0]
 
         
 #if activeplayer=bottom: effective dice = -activedice
@@ -368,9 +400,7 @@ while True:
     moved = 0
     if dice.inturn and clickedpip:  #has a pip been clicked
         print("\n*****MAIN MOVE LOGIC*****")
-        if activeplayer.name=="bottom":  #change dice values negative for the bottom player
-            for i in range(len(activedice)):
-                activedice[i][0]=-activedice[i][0]
+
         
         if activeplayer.jail:
             pass
@@ -463,9 +493,9 @@ while True:
     dtext.append("dice.inturn:    "+str(dice.inturn))
     dtext.append("dice.turn:      "+str(dice.turn))
     dtext.append("activeplayer:   "+str(activeplayer.name))
-    dtext.append("activedice:     "+str(activedice))
     dtext.append("dicelog:        "+str(dice.dicelog))
-    dtext.append("availabledice:  "+str(availabledice))
+    dtext.append("activedice:     "+str(activedice))
+    dtext.append("effectivedice:  "+str(effectivedice))
     dxpos=1000
     dypos=400
     for line in range(len(dtext)):
