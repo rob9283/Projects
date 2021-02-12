@@ -172,7 +172,7 @@ class Board():
 
     
     def checkdestination(self,player,destinationindex):
-        #return 0 for no good, 1 for ok, and 2 for bump
+        #return 0 for no good, 1 for ok
         if player.name=="top" and destinationindex > 24:
             return 0
         if player.name=="bottom" and destinationindex < 1:
@@ -183,22 +183,21 @@ class Board():
             return 1
         else:
             if len(self.positions[destinationindex])==1:
-                return 2
+                return 1
             else:
-                return "error--shouldn't get here"
+                return 0
         
 
-    def move(self,source,destination):
-        print("move(source,destination):  ",source,",",destination)
-        destination.append(source.pop())
+    def move(self,activeplayer,otherplayer,source,destination):
+        print("move(player,otherplayer,source,destination):  ",player.name,",",otherplayer.name,",",source,",",destination)
+        if not destination:
+            destination.append(source.pop())
+        elif destination[0].player==player:
+            destination.append(source.pop())
+        else:
+            otherplayer.jail.append(destination.pop())
+            destination.append(source.pop())
         return 1
-
-    def movebump(self,source,destination,jail):
-        print("movebump(source,destination,jail):  ",source,",",destination,",",jail)
-        jail.append(destination.pop())
-        destination.append(source.pop())
-        return 1
-
 
     def setup(self):  #deprecated after moving this to the create section.
         #destroy old pips
@@ -311,6 +310,7 @@ while True:
         print("clickedsprite:       ",clickedsprite)
         if isinstance(clickedsprite,Pip):
             clickedpip = clickedsprite
+            print("clickedpip:  ",clickedpip)
         if isinstance(clickedsprite,Button):
             clickedbutton = clickedsprite
 
@@ -319,26 +319,29 @@ while True:
         effectivedice=[[],[],[],[]]
         print("\n***if dice.turn==0")
         activeplayer = dice.whogoesfirst(playerA,playerB)
+        if activeplayer==playerA:
+            otherplayer=playerB
+        else:
+            otherplayer=playerA
         dice.turn+=1
         print("^^^incrementing dice.turn from the rolloff")
-        
         dice.inturn=1
         activedice=dice.dicelog[dice.turn][:]
         #add used flags to activedice
         for i in range(len(activedice)):
             activedice[i]=[activedice[i],0]
         
-        #now add usedflags to activedice, so we know if a die has been played
+        #now get effective dice
         for i in range(len(activedice)):
             effectivedice[i]=[activedice[i][0],i] #come back here to add flags to effective dice if we need it, but try hard not to need it
         
         #sort the effective dice so it's high to low
         effectivedice.sort(reverse=True)
         
-    
         if not effectivedice[3]:   #if dice 3 is empty, it's not doubles, pop last two empty dice
             effectivedice.pop()
             effectivedice.pop()
+
         #if activeplayer is bottom, neg the dice values
         if activeplayer==playerB:
             for i in range(len(effectivedice)):
@@ -355,6 +358,8 @@ while True:
 #do displaydice based on activedice 
 #do moves based on effectivedice, write the usedflag in both effective and active
 
+#maybe get rid of dice.turn, and use len(dicelog)-1?  Always the same, right?
+
 
 
     #UI Render:
@@ -369,14 +374,9 @@ while True:
 
     if not dice.inturn and clickedbutton == RollButton:
         print("\n*****ROLLING DICE*****")
-        dice.dicelog.append(dice.roll())
+        #turn handling
         dice.turn += 1  
-        activedice=dice.dicelog[dice.turn][:]   #this funky syntax makes a copy, instead of a reference
-        for dice in activedice:
-            dice=[dice,0]
-            #now add usedflags to activedice, so we can tell if a die has been played
         dice.inturn=1
-        
         #make the correct player active
         if activeplayer == players[0]:
             activeplayer = players[1]
@@ -385,9 +385,30 @@ while True:
             activeplayer = players[0]
             otherplayer = players[1]
 
-        if activeplayer.name=="bottom":  #change dice values negative for the bottom player
-            for i in range(len(activedice)):
-                activedice[i][0]=-activedice[i][0]
+        #actually roll the fucking dice, add it to dicelog
+        dice.dicelog.append(dice.roll())
+        activedice=dice.dicelog[dice.turn][:]
+
+        #add used flags to activedice
+        for i in range(len(activedice)):
+            activedice[i]=[activedice[i],0]
+        
+        #now get effective dice
+        effectivedice=[[],[],[],[]]
+        for i in range(len(activedice)):
+            effectivedice[i]=[activedice[i][0],i] #come back here to add flags to effective dice if we need it, but try hard not to need it
+        
+        #sort the effective dice so it's high to low
+        effectivedice.sort(reverse=True)
+        
+        if not effectivedice[3]:   #if dice 3 is empty, it's not doubles, pop last two empty dice
+            effectivedice.pop()
+            effectivedice.pop()
+
+        #if activeplayer is bottom, neg the dice values
+        if activeplayer==playerB:
+            for i in range(len(effectivedice)):
+                effectivedice[i][0] *= -1
 
         
 #if activeplayer=bottom: effective dice = -activedice
@@ -398,15 +419,34 @@ while True:
 
 
     moved = 0
-    if dice.inturn and clickedpip:  #has a pip been clicked
+    if dice.inturn and clickedpip:  #****** TODO has a pip been clicked (why can't I .player==activeplayer)
         print("\n*****MAIN MOVE LOGIC*****")
 
-        
+        print("clickedpip.player.name:    ",clickedpip.player.name)
+        print("clickedpip.position:  ",clickedpip.position)
+        print("effectivedice:        ",effectivedice)
+        print("len(effectivedice):   ",len(effectivedice))
+
         if activeplayer.jail:
             pass
         if activeplayer.bearingoff:
             pass
         
+        # regular move
+        # are there any valid moves?
+        validmoves=0
+        for i in range(len(effectivedice)):
+            print("i:         ",i)
+            print("len(effectivedice):   ",len(effectivedice))
+            print("checking:  ",board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position))
+            if board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position):
+                moved = board.move(activeplayer,otherplayer,board.positions[clickedpip.position],board.positions[clickedpip.position+effectivedice[i][0]])
+                activedice[effectivedice[i][1]][1]=1
+                effectivedice.pop(i)
+                break
+
+
+
         # maybe skip list comprehension for now, eh?
         # availabledice = [board.checkdestination(activeplayer,clickedpip.position+tdice[0]) for tdice in activedice]
 
@@ -440,13 +480,9 @@ while True:
 
 
 
-    if moved:
-        # print("\n***if moved")
-        if activedice:
-            activedice.pop()  #don't need to pop this because we'll mark inactive in the move logic
-        if not activedice:
-            dice.inturn = 0
-            #also change players
+    if not effectivedice:   #no more effectice dice, turn is over
+        dice.inturn = 0
+
 
         
 
