@@ -129,8 +129,7 @@ class Board():
         self.positionwidth = 70
         self.positiongap = 5
         self.centerwidth = 70
-        #for x in range(24):
-        #    self.positions.append([])
+
 
     def assignpipsxy(self):
         for pip in pips:  #Todo: remove this; moves all pips to 50,50 so we don't have duplicate sprite clicking while we figure out bumps and rending home and jail
@@ -170,25 +169,49 @@ class Board():
             else:
                 x += self.positionwidth
 
+        #jails
+        x = 1500
+        y = 250
+        for jailedpip in playerA.jail:
+            jailedpip.x = x
+            jailedpip.y = y
+            y += jailedpip.diameter + self.positiongap
+
+        y = 650
+        for jailedpip in playerB.jail:
+            jailedpip.x = x
+            jailedpip.y = y
+            y += jailedpip.diameter + self.positiongap
+
+
+
+
+
     
     def checkdestination(self,player,destinationindex):
         #return 0 for no good, 1 for ok
         if player.name=="top" and destinationindex > 24:
+            print("checkdestination: top player moving off board")
             return 0
         if player.name=="bottom" and destinationindex < 1:
+            print("checkdestination: bottom player moving off board")
             return 0
         if not self.positions[destinationindex]:
+            print("checkdestination: destination empty")
             return 1
         if self.positions[destinationindex][0].player.name == player.name:
+            print("checkdestination: destination contains friendly pips")
             return 1
-        else:
+        else: #must contain enemy pips, so
             if len(self.positions[destinationindex])==1:
+                print("checkdestination: destination contains one lonely enemy pip")
                 return 1
             else:
+                print("checkdestination: destination contains more than one enemy pip")
                 return 0
         
 
-    def move(self,activeplayer,otherplayer,source,destination):
+    def move(self,player,otherplayer,source,destination):
         print("move(player,otherplayer,source,destination):  ",player.name,",",otherplayer.name,",",source,",",destination)
         if not destination:
             destination.append(source.pop())
@@ -244,8 +267,8 @@ class Player():
 
 
 board = Board(1300,100)
-playerA = Player("top", WHITE)
-playerB = Player("bottom", GREEN)
+playerA = Player("top", GREEN)
+playerB = Player("bottom", WHITE)
 players = [playerA, playerB]
 
 pips = pygame.sprite.Group()
@@ -307,10 +330,10 @@ while True:
         print("WARNING: clicked on two sprites at the same time")
     elif len(clickedsprites)==1:
         clickedsprite=clickedsprites[0]
-        print("clickedsprite:       ",clickedsprite)
+        print("from mousebindings:clickedsprite:       ",clickedsprite)
         if isinstance(clickedsprite,Pip):
             clickedpip = clickedsprite
-            print("clickedpip:  ",clickedpip)
+            print("from mousebindings:clickedpip:  ",clickedpip)
         if isinstance(clickedsprite,Button):
             clickedbutton = clickedsprite
 
@@ -394,7 +417,7 @@ while True:
             activedice[i]=[activedice[i],0]
         
         #now get effective dice
-        effectivedice=[[],[],[],[]]
+        effectivedice=[[],[],[],[]] #always start with four blank dice
         for i in range(len(activedice)):
             effectivedice[i]=[activedice[i][0],i] #come back here to add flags to effective dice if we need it, but try hard not to need it
         
@@ -411,15 +434,12 @@ while True:
                 effectivedice[i][0] *= -1
 
         
-#if activeplayer=bottom: effective dice = -activedice
-
-
 
 
 
 
     moved = 0
-    if dice.inturn and clickedpip:  #****** TODO has a pip been clicked (why can't I .player==activeplayer)
+    if dice.inturn and clickedpip and clickedpip.player==activeplayer:  #****** TODO has a pip been clicked (why can't I .player==activeplayer)
         print("\n*****MAIN MOVE LOGIC*****")
 
         print("clickedpip.player.name:    ",clickedpip.player.name)
@@ -435,7 +455,7 @@ while True:
         # regular move
         # are there any valid moves?
         validmoves=0
-        for i in range(len(effectivedice)):
+        for i in range(len(effectivedice)):  #for when largest die is not valid move for that pip
             print("i:         ",i)
             print("len(effectivedice):   ",len(effectivedice))
             print("checking:  ",board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position))
@@ -528,12 +548,13 @@ while True:
     dtext=[]
     dtext.append("dice.inturn:    "+str(dice.inturn))
     dtext.append("dice.turn:      "+str(dice.turn))
-    dtext.append("activeplayer:   "+str(activeplayer.name))
+    dtext.append("activeplayer:   "+str(activeplayer.name)+" "+str(activeplayer.color))
+    dtext.append("otherplayer:    "+str(otherplayer.name))
     dtext.append("dicelog:        "+str(dice.dicelog))
     dtext.append("activedice:     "+str(activedice))
     dtext.append("effectivedice:  "+str(effectivedice))
     dxpos=1000
-    dypos=400
+    dypos=380
     for line in range(len(dtext)):
         dsurface = debugfont.render(dtext[line],1,WHITE)
         screen.blit(dsurface,(dxpos,dypos+(line*15)))
@@ -584,8 +605,19 @@ while True:
 
 
 
+
+
+
 """
 TKTKTKTKTKTKTKTKTK
+
+Fixed bugs in checking who can move, and bumping seems to work properly
+Running into trouble that sometimes I check for "playerA" and sometimes for =="top"
+
+Next try more testing to make sure all regular moves handled ok
+
+
+
 
 Move Log
     turn number, move number, source, destination
