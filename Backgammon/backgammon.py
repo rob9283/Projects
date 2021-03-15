@@ -132,7 +132,8 @@ class Board():
 
 
     def assignpipsxy(self):
-        for pip in pips:  #Todo: remove this; moves all pips to 50,50 so we don't have duplicate sprite clicking while we figure out bumps and rending home and jail
+        #error checking -- move all pips to 50,50 first and then put them where they go.  Any pips left here = trouble
+        for pip in pips:  
             pip.x=50
             pip.y=50
         
@@ -143,6 +144,7 @@ class Board():
             for spot in range(len(self.positions[position])):
                 self.positions[position][spot].position = position
 
+
         #top row
         x = self.startx
         for position in range(1,13):
@@ -152,7 +154,7 @@ class Board():
                 self.positions[position][spot].y = y
                 y += self.positions[position][spot].diameter + self.positiongap
             if position == 6:  #if we're at the center, skip the center
-                x -= (self.centerwidth + self.positionwidth)
+                x -= (self.centerwidth + self.positionwidth + self.positiongap)
             else:
                 x -= self.positionwidth
         
@@ -169,16 +171,34 @@ class Board():
             else:
                 x += self.positionwidth
 
+        #homes
+        x=1500
+        y=650
+        for homepip in playerA.home:
+            homepip.position="home"
+            homepip.x = x
+            homepip.y = y
+            y += homepip.diameter/5 
+        
+        y=250
+        for homepip in playerB.home:
+            homepip.position="home"
+            homepip.x = x
+            homepip.y = y
+            y += homepip.diameter/5 
+
         #jails
-        x = 1500
-        y = 250
+        x = 880
+        y = 150
         for jailedpip in playerA.jail:
+            jailedpip.position="jail"
             jailedpip.x = x
             jailedpip.y = y
             y += jailedpip.diameter + self.positiongap
 
-        y = 650
+        y = 550
         for jailedpip in playerB.jail:
+            jailedpip.position="jail"
             jailedpip.x = x
             jailedpip.y = y
             y += jailedpip.diameter + self.positiongap
@@ -447,8 +467,9 @@ while True:
         print("effectivedice:        ",effectivedice)
         print("len(effectivedice):   ",len(effectivedice))
 
-        if activeplayer.jail:
-            pass
+        if activeplayer.jail and clickedpip:
+            validmoves=0
+
         if activeplayer.bearingoff:
             pass
         
@@ -467,36 +488,6 @@ while True:
 
 
 
-        # maybe skip list comprehension for now, eh?
-        # availabledice = [board.checkdestination(activeplayer,clickedpip.position+tdice[0]) for tdice in activedice]
-
-
-
-
-
-
-
-
-        # if clickedpip.player == activeplayer:  #if the clicked pip belongs to activeplayer
-        #     if activeplayer.name=="top":  #top player
-        #         if activeplayer.jail:  #player is in jail, can only move jailed pips
-        #             destination = activedie  
-        #             if board.checkdestination(activeplayer,destination):
-        #                 moved = board.move(activeplayer.jail,board.positions[destination])
-        #         elif activeplayer.bearingoff:  #player is bearing off, special rules
-        #             destination = activedie
-        #             if destination > 24:
-        #                 moved = board.move(board.positions[clickedpip.position],player.home)
-        #             else:
-        #                 if board.checkdestination(activeplayer,destination):
-        #                     board.move(board.positions[clickedpip.position],board.positions[destination])
-        #         else:   #regular move
-        #             destination = clickedpip.position+activedie
-        #             # print(destination)
-        #             if board.checkdestination(activeplayer,destination)==1:
-        #                 moved = board.move(board.positions[clickedpip.position],board.positions[destination])
-        #             if board.checkdestination(activeplayer,destination)==2:
-        #                 moved = board.movebump(board.positions[clickedpip.position],board.positions[destination],activeplayer.jail)
 
 
 
@@ -505,22 +496,6 @@ while True:
 
 
         
-
-
-#######################################################
-    # keep history by turn, roll, sort, activedie, etc.  
-
-    # handle bumping        
-    # render jail and home
-    #****** handle bumping -- checkdestination got a "should never get here" -- but maybe outside of a regular check?  like, when it shouldn't have been checking anyway?
-    # important:  figure out if highest die first even works.  If it's blocked, do lower die?
-    #             how did that weird old Palm game work?
-
-    # movebump is being passed the wrong jail
-    # maybe set "otherplayer" as well as "activeplayer"
- 
-
-#######################################################
 
 
     #calc isbearingoff (could move this to inside "if moved:" to save some CPU
