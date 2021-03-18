@@ -233,11 +233,11 @@ class Board():
 
     def move(self,player,otherplayer,source,destination):
         print("move(player,otherplayer,source,destination):  ",player.name,",",otherplayer.name,",",source,",",destination)
-        if not destination:
+        if not destination: #destination is blank, so move
             destination.append(source.pop())
-        elif destination[0].player==player:
+        elif destination[0].player==player:  #destination has friendly pips, so move
             destination.append(source.pop())
-        else:
+        else:  #destination must have a single enemy pip, because checkdestination wouldn't allow the move, so bump
             otherplayer.jail.append(destination.pop())
             destination.append(source.pop())
         return 1
@@ -467,8 +467,21 @@ while True:
         print("effectivedice:        ",effectivedice)
         print("len(effectivedice):   ",len(effectivedice))
 
-        if activeplayer.jail and clickedpip:
+        if activeplayer.jail and clickedpip.position=="jail":
+            print("jail move handling")
             validmoves=0
+            if activeplayer==playerA:
+                jailindex=0
+            else:
+                jailindex=25
+            for i in range(len(effectivedice)):
+                if board.checkdestination(activeplayer,effectivedice[i][0]+jailindex):
+                    moved = board.move(activeplayer,otherplayer,activeplayer.jail,board.positions[effectivedice[i][0]+jailindex])
+                    activedice[effectivedice[i][1]][1]=1
+                    effectivedice.pop(i)
+                    break
+
+
 
         if activeplayer.bearingoff:
             pass
@@ -476,15 +489,17 @@ while True:
         # regular move
         # are there any valid moves?
         validmoves=0
-        for i in range(len(effectivedice)):  #for when largest die is not valid move for that pip
-            print("i:         ",i)
-            print("len(effectivedice):   ",len(effectivedice))
-            print("checking:  ",board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position))
-            if board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position):
-                moved = board.move(activeplayer,otherplayer,board.positions[clickedpip.position],board.positions[clickedpip.position+effectivedice[i][0]])
-                activedice[effectivedice[i][1]][1]=1
-                effectivedice.pop(i)
-                break
+        if (not activeplayer.jail) and (not activeplayer.bearingoff):
+            print("default move handling")
+            for i in range(len(effectivedice)):  #for when largest die is not valid move for that pip
+            # print("i:         ",i)
+            # print("len(effectivedice):   ",len(effectivedice))
+            # print("checking:  ",board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position))
+                if board.checkdestination(activeplayer,effectivedice[i][0]+clickedpip.position):
+                    moved = board.move(activeplayer,otherplayer,board.positions[clickedpip.position],board.positions[clickedpip.position+effectivedice[i][0]])
+                    activedice[effectivedice[i][1]][1]=1
+                    effectivedice.pop(i)
+                    break
 
 
 
@@ -528,6 +543,9 @@ while True:
     dtext.append("dicelog:        "+str(dice.dicelog))
     dtext.append("activedice:     "+str(activedice))
     dtext.append("effectivedice:  "+str(effectivedice))
+    dtext.append("ActPlayerJail:  "+str(bool(activeplayer.jail)))
+    dtext.append("ActPlayerBO  :  "+str(bool(activeplayer.bearingoff)))
+    # dtext.append("logictest:      "+str(activeplayer.bearingoff) + str(activeplayer.jail))
     dxpos=1000
     dypos=380
     for line in range(len(dtext)):
@@ -589,7 +607,9 @@ TKTKTKTKTKTKTKTKTK
 Fixed bugs in checking who can move, and bumping seems to work properly
 Running into trouble that sometimes I check for "playerA" and sometimes for =="top"
 
-Next try more testing to make sure all regular moves handled ok
+
+Find out why lin 496 is called at all when moving a pip out of jail.  Shouldn't break get us to a new turn?
+It's because we're not doing anything with moved.  moved = move(), but then we have to zero that out and start over.
 
 
 
@@ -620,17 +640,14 @@ are there any moves at all?  (pass turn if not)
 is the clicked move valid on the highest die?  next highest?  do the move
 
 
-
-combine movebump and move(), because we'll test valid moves in move logic?
-like, if there's a piece in destination from the opposite player, bump to jail
-So, always pass activeplayer, otherplayer to move()
-
+We're tracking position by positions[index] and also by pip.position.  This is dumb.
+Convert positions to a dict, with position numbers and "playerAjail" and such?
 
 
 # todo
 # handle render when there are more than 6 pips in a position
 # do I even need the board object if I only ever have one instance?  Could move all those functions out to root?
-# if we're forcing players to move largest die first, need to check if there even are any valid moves after each roll
+# if we're forcing players to move largest die first, need to check if there even are any valid moves after each move
 
 
 
