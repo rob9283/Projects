@@ -311,6 +311,7 @@ dice=Dice()
 activedice=[]
 effectivedice=[]
 activeplayer=playerA
+validmoves=0
 
 #game loop
 
@@ -453,8 +454,41 @@ while True:
             for i in range(len(effectivedice)):
                 effectivedice[i][0] *= -1
 
-        
 
+
+
+
+#let's do valid move checking outside of the move logic?  need same ifs to determine move type
+    if dice.inturn:
+        validmoves = 0
+        if activeplayer.jail:
+            if activeplayer==playerA:
+                jailindex=0
+            else:
+                jailindex=25
+            for i in range(len(effectivedice)):
+                if board.checkdestination(activeplayer,effectivedice[i][0]+jailindex):
+                    validmoves += 1
+            print("in jail -- valid moves:  ",validmoves)
+            if not validmoves:
+                dice.inturn = 0
+
+        elif activeplayer.bearingoff:
+            pass
+
+        else:
+            for j in range(len(board.positions)):
+                for i in range(len(effectivedice)):
+                    if board.checkdestination(activeplayer,effectivedice[i][0]+j):
+                        validmoves += 1
+                
+            print("regular move -- valid moves:  ",validmoves)
+    
+        if not validmoves:
+            print("no moves, ending turn")
+            dice.inturn = 0
+
+        
 
 
 
@@ -470,26 +504,30 @@ while True:
         if activeplayer.jail and clickedpip.position=="jail":
             print("jail move handling")
             validmoves=0
+
             if activeplayer==playerA:
                 jailindex=0
             else:
                 jailindex=25
+
             for i in range(len(effectivedice)):
                 if board.checkdestination(activeplayer,effectivedice[i][0]+jailindex):
                     moved = board.move(activeplayer,otherplayer,activeplayer.jail,board.positions[effectivedice[i][0]+jailindex])
                     activedice[effectivedice[i][1]][1]=1
                     effectivedice.pop(i)
                     break
-
-
-
-        if activeplayer.bearingoff:
-            pass
         
+        
+        
+        elif activeplayer.bearingoff:
+            pass
+
+
         # regular move
         # are there any valid moves?
-        validmoves=0
-        if (not activeplayer.jail) and (not activeplayer.bearingoff):
+
+
+        elif (not activeplayer.jail) and (not activeplayer.bearingoff):
             print("default move handling")
             for i in range(len(effectivedice)):  #for when largest die is not valid move for that pip
             # print("i:         ",i)
@@ -500,6 +538,7 @@ while True:
                     activedice[effectivedice[i][1]][1]=1
                     effectivedice.pop(i)
                     break
+
 
 
 
@@ -544,7 +583,9 @@ while True:
     dtext.append("activedice:     "+str(activedice))
     dtext.append("effectivedice:  "+str(effectivedice))
     dtext.append("ActPlayerJail:  "+str(bool(activeplayer.jail)))
-    dtext.append("ActPlayerBO  :  "+str(bool(activeplayer.bearingoff)))
+    dtext.append("ActPlayerBO:    "+str(bool(activeplayer.bearingoff)))
+    dtext.append("validmoves:     "+str(validmoves))
+    
     # dtext.append("logictest:      "+str(activeplayer.bearingoff) + str(activeplayer.jail))
     dxpos=1000
     dypos=380
@@ -608,10 +649,10 @@ Fixed bugs in checking who can move, and bumping seems to work properly
 Running into trouble that sometimes I check for "playerA" and sometimes for =="top"
 
 
-Find out why lin 496 is called at all when moving a pip out of jail.  Shouldn't break get us to a new turn?
-It's because we're not doing anything with moved.  moved = move(), but then we have to zero that out and start over.
-
-
+Find out why validmoves = 15 for a regular move when the only remaining die is a 6 and there are no open moves.
+Try: making checkdestination report which index it's checking
+(back to original question: do we pass lists or indexes to move() and checkdestination())
+Basically: tighten up validmove loops.  It should return 34 valid moves when there are only five positions that have pips.
 
 
 Move Log
